@@ -1,0 +1,14 @@
+# Sekrety
+.env
+
+# Dane generowane (syntetyczne faktury + wyniki)
+data/
+out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.streamlit/secrets.toml
