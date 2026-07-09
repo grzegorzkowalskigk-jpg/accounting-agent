@@ -1,0 +1,22 @@
+{
+  "invoice_number": "FV/2026/06/0001",
+  "issue_date": "2026-06-09",
+  "sale_date": "2026-06-08",
+  "due_date": "2026-06-23",
+  "seller_name": "BiuroMax S.A.",
+  "seller_nip": "5252248481",
+  "seller_address": "al. Handlowa 88, 00-950 Warszawa",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Hosting serwera VPS", "quantity": 1, "unit": "mies.", "unit_price_net": 182.11, "vat_rate": 0.23, "net": 182.11, "vat": 41.89, "gross": 224.00},
+    {"description": "Hosting serwera VPS", "quantity": 1, "unit": "mies.", "unit_price_net": 164.00, "vat_rate": 0.23, "net": 164.00, "vat": 37.72, "gross": 201.72}
+  ],
+  "total_net": 346.11,
+  "total_vat": 79.61,
+  "total_gross": 425.72,
+  "payment_method": "Przelew",
+  "category": null
+}

@@ -1,0 +1,24 @@
+{
+  "invoice_number": "FV/2026/06/0001",
+  "issue_date": "2026-04-16",
+  "sale_date": "2026-04-13",
+  "due_date": "2026-04-30",
+  "seller_name": "NetCom Polska Sp. z o.o.",
+  "seller_nip": "1981726351",
+  "seller_address": "ul. Światłowodowa 21, 50-100 Wrocław",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Paliwo Diesel", "quantity": 30, "unit": "l", "unit_price_net": 6.22, "vat_rate": 0.23, "net": 186.60, "vat": 42.92, "gross": 229.52},
+    {"description": "Przewóz przesyłki", "quantity": 1, "unit": "szt.", "unit_price_net": 56.69, "vat_rate": 0.23, "net": 56.69, "vat": 13.04, "gross": 69.73},
+    {"description": "Przewóz przesyłki", "quantity": 1, "unit": "szt.", "unit_price_net": 34.04, "vat_rate": 0.23, "net": 34.04, "vat": 7.83, "gross": 41.87},
+    {"description": "Przewóz przesyłki", "quantity": 1, "unit": "szt.", "unit_price_net": 23.55, "vat_rate": 0.23, "net": 23.55, "vat": 5.42, "gross": 28.97}
+  ],
+  "total_net": 300.88,
+  "total_vat": 69.21,
+  "total_gross": 370.09,
+  "payment_method": "Przelew",
+  "category": null
+}

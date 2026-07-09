@@ -1,0 +1,23 @@
+{
+  "invoice_number": "FV/2026/05/0009",
+  "issue_date": "2026-05-28",
+  "sale_date": "2026-05-28",
+  "due_date": "2026-06-04",
+  "seller_name": "Handel-Widmo Sp. z o.o.",
+  "seller_nip": "1181934533",
+  "seller_address": "ul. Nieznana 1, 00-001 Warszawa",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Projekt graficzny", "quantity": 1, "unit": "godz.", "unit_price_net": 122.29, "vat_rate": 0.23, "net": 122.29, "vat": 28.13, "gross": 150.42},
+    {"description": "Kampania reklamowa online", "quantity": 2, "unit": "usł.", "unit_price_net": 508.11, "vat_rate": 0.23, "net": 1016.22, "vat": 233.73, "gross": 1249.95},
+    {"description": "Projekt graficzny", "quantity": 3, "unit": "godz.", "unit_price_net": 173.82, "vat_rate": 0.23, "net": 521.46, "vat": 119.94, "gross": 641.40}
+  ],
+  "total_net": 1659.97,
+  "total_vat": 381.80,
+  "total_gross": 2041.77,
+  "payment_method": "Przelew",
+  "category": null
+}
