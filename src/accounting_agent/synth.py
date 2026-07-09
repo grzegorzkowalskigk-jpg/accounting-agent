@@ -196,10 +196,11 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
 
     # wybór, w które wstrzyknąć anomalie
     anomaly_of: dict[int, str] = {}
-    picks = rng.sample(range(1, n), 3)
+    picks = rng.sample(range(1, n), 4)
     anomaly_of[picks[0]] = "duplicate"
     anomaly_of[picks[1]] = "arithmetic"
     anomaly_of[picks[2]] = "outlier"
+    anomaly_of[picks[3]] = "wrong_vat"
 
     records: list[Record] = []
     for i, inv in enumerate(base):
@@ -219,6 +220,14 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
             it.vat = _r2(it.net * it.vat_rate)
             it.gross = _r2(it.net + it.vat)
             inv.total_net = _r2(sum(x.net for x in inv.items))
+            inv.total_vat = _r2(sum(x.vat for x in inv.items))
+            inv.total_gross = _r2(inv.total_net + inv.total_vat)
+        elif anomaly == "wrong_vat":
+            # zaniżona stawka VAT (8% zamiast 23%) — arytmetycznie spójna, ale błędna stawka
+            it = inv.items[0]
+            it.vat_rate = 0.08
+            it.vat = _r2(it.net * it.vat_rate)
+            it.gross = _r2(it.net + it.vat)
             inv.total_vat = _r2(sum(x.vat for x in inv.items))
             inv.total_gross = _r2(inv.total_net + inv.total_vat)
 

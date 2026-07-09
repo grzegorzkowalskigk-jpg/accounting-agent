@@ -21,11 +21,12 @@ def process(invoices: list[Invoice]) -> list[dict]:
         issues = validate_invoice(inv)
         category, conf = categorize(inv)
         errors = [i for i in issues if i.severity == "error"]
+        vat_warn = any("vat_rate" in i.field for i in issues)  # zła/nietypowa stawka VAT
 
         notes = [f"{i.field}: {i.message}" for i in issues] + list(flags)
         if conf == 0.0:
             notes.append("kategoria niepewna — do przeglądu")
-        status = "OK" if not errors and not flags and conf > 0 else "DO PRZEGLĄDU"
+        status = "OK" if not errors and not flags and not vat_warn and conf > 0 else "DO PRZEGLĄDU"
 
         results.append({
             "invoice": inv,

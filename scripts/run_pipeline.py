@@ -53,20 +53,23 @@ def main() -> None:
 
     # --- ewaluacja: czy złapaliśmy wstrzyknięte anomalie? ---
     print("\nEWALUACJA WYKRYWANIA ANOMALII")
-    ok = 0
+    ok = total = 0
     for r_gt, r in zip(gt, rows):
         inj = r_gt["injected_anomaly"]
         if not inj:
             continue
         errs = any(i.severity == "error" for i in r["issues"])
+        vat_warn = any("vat_rate" in i.field and i.severity == "warning" for i in r["issues"])
         caught = (
             (inj == "arithmetic" and errs)
             or (inj == "duplicate" and "duplikat" in r["flags"])
             or (inj == "outlier" and "kwota odstająca" in r["flags"])
+            or (inj == "wrong_vat" and vat_warn)
         )
         ok += caught
+        total += 1
         print(f"  {r_gt['file']:<22} wstrzyknięto={inj:<12} -> {'ZŁAPANE' if caught else 'PRZEOCZONE'}")
-    print(f"  Wynik: {ok}/3 anomalii wykrytych")
+    print(f"  Wynik: {ok}/{total} anomalii wykrytych")
 
 
 if __name__ == "__main__":

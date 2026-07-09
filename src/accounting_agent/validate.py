@@ -9,7 +9,24 @@ from datetime import date
 
 from .schema import VAT_RATES, Invoice
 
-TOL = 0.02  # tolerancja groszowa dla zaokrągleń
+TOL = 0.02  # tolerancja groszowa dla zaokrągleń (błędy rzędu 0,01 zł NIE są flagowane)
+
+# Oczekiwana stawka VAT wg rodzaju towaru/usługi (heurystyka).
+# Domyślnie 23%; wyjątki dla stawek obniżonych. Łapie „8% zamiast 23%".
+REDUCED_RATE_KEYWORDS: dict[float, list[str]] = {
+    0.08: ["gastronom", "hotel", "nocleg", "przewóz os", "transport os", "roboty budowl"],
+    0.05: ["książk", "e-book", "ebook", "czasopism", "żywnoś"],
+    0.00: ["eksport", "wewnątrzwspólnot", "wnt "],
+}
+
+
+def expected_vat_rate(description: str) -> float:
+    """Typowa stawka VAT dla danej pozycji (23% domyślnie, obniżone dla wyjątków)."""
+    d = description.lower()
+    for rate, keywords in REDUCED_RATE_KEYWORDS.items():
+        if any(k in d for k in keywords):
+            return rate
+    return 0.23
 
 
 @dataclass
@@ -44,6 +61,10 @@ def validate_invoice(inv: Invoice) -> list[Issue]:
             issues.append(Issue("error", f"item[{n}].gross", f"brutto {it.gross} ≠ netto+VAT {round(it.net + it.vat, 2)}"))
         if it.vat_rate not in VAT_RATES:
             issues.append(Issue("warning", f"item[{n}].vat_rate", f"nietypowa stawka VAT: {it.vat_rate}"))
+        exp = expected_vat_rate(it.description)
+        if abs(it.vat_rate - exp) > 1e-9:
+            issues.append(Issue("warning", f"item[{n}].vat_rate",
+                                f"zastosowano {int(round(it.vat_rate * 100))}% VAT — dla „{it.description[:26]}” zwykle {int(round(exp * 100))}%"))
 
     # 2. Arytmetyka sum
     if not _close(inv.total_net, sum(i.net for i in inv.items)):
