@@ -15,7 +15,7 @@ RULES: list[tuple[str, list[str]]] = [
     ("Marketing i reklama", ["reklam", "kampani", "marketing", "graficz", "projekt graf"]),
     ("Wynajem i media", ["wynajem", "czynsz", "energia", "prąd", "media", "powierzchni"]),
     ("Usługi księgowe i prawne", ["księgow", "prawn", "porada", "kancelari", "audyt"]),
-    ("Sprzęt i wyposażenie", ["laptop", "monitor", "krzesło", "biurk", "komputer", "drukark"]),
+    ("Sprzęt i wyposażenie", ["laptop", "monitor", "krzesło", "biurko", "komputer"]),
     ("Materiały biurowe", ["papier", "toner", "tusz", "długopis", "materiał", "artykuł"]),
 ]
 

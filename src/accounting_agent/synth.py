@@ -15,15 +15,16 @@ from PIL import Image, ImageDraw, ImageFont
 from .schema import CATEGORIES, Invoice, LineItem
 
 # ---------------------------------------------------------------- dane źródłowe
+# (nazwa, NIP — stały na kontrahenta, adres)
 SELLERS = [
-    ("SoftForge Sp. z o.o.", "ul. Krzemowa 12, 30-001 Kraków"),
-    ("BiuroMax S.A.", "al. Handlowa 88, 00-950 Warszawa"),
-    ("PetroTrans Sp. z o.o.", "ul. Paliwowa 3, 80-200 Gdańsk"),
-    ("NetCom Polska Sp. z o.o.", "ul. Światłowodowa 21, 50-100 Wrocław"),
-    ("Kreatywni Sp. z o.o.", "ul. Reklamowa 7, 61-001 Poznań"),
-    ("Nieruchomości Centrum Sp. z o.o.", "ul. Rynek 1, 31-042 Kraków"),
-    ("Kancelaria Nowak i Wspólnicy", "ul. Prawna 15, 00-020 Warszawa"),
-    ("TechSprzęt S.A.", "ul. Serwerowa 44, 40-001 Katowice"),
+    ("SoftForge Sp. z o.o.", "6772345198", "ul. Krzemowa 12, 30-001 Kraków"),
+    ("BiuroMax S.A.", "5252248481", "al. Handlowa 88, 00-950 Warszawa"),
+    ("PetroTrans Sp. z o.o.", "5832917640", "ul. Paliwowa 3, 80-200 Gdańsk"),
+    ("NetCom Polska Sp. z o.o.", "8981726354", "ul. Światłowodowa 21, 50-100 Wrocław"),
+    ("Kreatywni Sp. z o.o.", "7792483015", "ul. Reklamowa 7, 61-001 Poznań"),
+    ("Nieruchomości Centrum Sp. z o.o.", "6762938471", "ul. Rynek 1, 31-042 Kraków"),
+    ("Kancelaria Nowak i Wspólnicy", "5261048822", "ul. Prawna 15, 00-020 Warszawa"),
+    ("TechSprzęt S.A.", "6342815907", "ul. Serwerowa 44, 40-001 Katowice"),
 ]
 BUYER = ("GK Analytics Sp. z o.o.", "ul. Danych 10, 30-500 Kraków")
 
@@ -84,7 +85,7 @@ def _r2(x: float) -> float:
 
 
 def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
-    seller_name, seller_addr = rng.choice(SELLERS)
+    seller_name, seller_nip, seller_addr = rng.choice(SELLERS)
     category = rng.choice(CATEGORIES)
     products = CATALOG[category]
 
@@ -108,7 +109,7 @@ def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
     inv = Invoice(
         invoice_number=number,
         issue_date=issue.isoformat(), sale_date=sale.isoformat(), due_date=due.isoformat(),
-        seller_name=seller_name, seller_nip=_nip(rng), seller_address=seller_addr,
+        seller_name=seller_name, seller_nip=seller_nip, seller_address=seller_addr,
         buyer_name=BUYER[0], buyer_nip="1234567890", buyer_address=BUYER[1],
         currency="PLN", items=items,
         total_net=tnet, total_vat=tvat, total_gross=_r2(tnet + tvat),
@@ -196,11 +197,12 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
 
     # wybór, w które wstrzyknąć anomalie
     anomaly_of: dict[int, str] = {}
-    picks = rng.sample(range(1, n), 4)
+    picks = rng.sample(range(1, n), 5)
     anomaly_of[picks[0]] = "duplicate"
     anomaly_of[picks[1]] = "arithmetic"
     anomaly_of[picks[2]] = "outlier"
     anomaly_of[picks[3]] = "wrong_vat"
+    anomaly_of[picks[4]] = "layout"
 
     records: list[Record] = []
     for i, inv in enumerate(base):
@@ -230,6 +232,13 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
             it.gross = _r2(it.net + it.vat)
             inv.total_vat = _r2(sum(x.vat for x in inv.items))
             inv.total_gross = _r2(inv.total_net + inv.total_vat)
+        elif anomaly == "layout":
+            # ten sam kontrahent co inna, poprawna faktura, ale INNY format numeru (inny system)
+            src = next(j for j in range(n) if j not in anomaly_of)
+            inv.seller_name = base[src].seller_name
+            inv.seller_nip = base[src].seller_nip
+            inv.seller_address = base[src].seller_address
+            inv.invoice_number = f"{inv.issue_date[:4]}-{rng.randint(10000, 99999)}"
 
         fname = f"inv_{i + 1:03d}.png"
         render(inv, out / "invoices" / fname)

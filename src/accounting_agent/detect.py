@@ -34,9 +34,37 @@ def find_outliers(invoices: list[Invoice], k: float = 1.5) -> set[int]:
     return {i for i, inv in enumerate(invoices) if inv.total_gross > hi}
 
 
+def _num_pattern(s: str) -> str:
+    """Szkielet formatu numeru: cyfry→9, litery→A, separatory bez zmian. 'FV/2026/06/0001' → 'AA/9999/99/9999'."""
+    return "".join("9" if c.isdigit() else "A" if c.isalpha() else c for c in s)
+
+
+def find_format_mismatches(invoices: list[Invoice]) -> set[int]:
+    """Indeksy faktur o formacie numeru odbiegającym od dominującego — przy TYM SAMYM
+    kontrahencie (NIP), który ma też fakturę w formacie standardowym.
+
+    Sygnał: ten sam kontrahent, inny szablon/system numeracji → możliwe podszycie się
+    lub zmiana systemu → żółte światło, kontrola ręczna.
+    """
+    if len(invoices) < 3:
+        return set()
+    fmts = [_num_pattern(inv.invoice_number) for inv in invoices]
+    dominant = Counter(fmts).most_common(1)[0][0]
+    by_nip: dict[str, list[int]] = {}
+    for i, inv in enumerate(invoices):
+        by_nip.setdefault(inv.seller_nip, []).append(i)
+    flagged: set[int] = set()
+    for i, inv in enumerate(invoices):
+        if fmts[i] != dominant and any(fmts[j] == dominant for j in by_nip[inv.seller_nip] if j != i):
+            flagged.add(i)
+    return flagged
+
+
 def flags_for(invoices: list[Invoice]) -> list[list[str]]:
-    """Dla każdej faktury lista tagów: 'duplikat' i/lub 'kwota odstająca'."""
-    dups, outs = find_duplicates(invoices), find_outliers(invoices)
+    """Dla każdej faktury lista tagów anomalii (duplikat / kwota odstająca / inny format)."""
+    dups = find_duplicates(invoices)
+    outs = find_outliers(invoices)
+    fmts = find_format_mismatches(invoices)
     out: list[list[str]] = []
     for i in range(len(invoices)):
         tags = []
@@ -44,5 +72,7 @@ def flags_for(invoices: list[Invoice]) -> list[list[str]]:
             tags.append("duplikat")
         if i in outs:
             tags.append("kwota odstająca")
+        if i in fmts:
+            tags.append("inny format faktury — kontrola ręczna")
         out.append(tags)
     return out
