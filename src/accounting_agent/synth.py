@@ -14,9 +14,21 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .schema import CATEGORIES, Invoice, LineItem
 
+
+def _valid_nip(nip: str) -> str:
+    """Zwraca 10-cyfrowy NIP z POPRAWNĄ cyfrą kontrolną (na bazie pierwszych 9 cyfr wejścia)."""
+    w = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+    d = ("".join(c for c in nip if c.isdigit()) + "000000000")[:9]
+    c = sum(int(d[i]) * w[i] for i in range(9)) % 11
+    if c == 10:  # taka suma nie odpowiada żadnej cyfrze → zmień pierwszą cyfrę
+        d = ("2" if d[0] == "1" else "1") + d[1:]
+        c = sum(int(d[i]) * w[i] for i in range(9)) % 11
+    return d + str(c)
+
+
 # ---------------------------------------------------------------- dane źródłowe
-# (nazwa, NIP — stały na kontrahenta, adres)
-SELLERS = [
+# (nazwa, NIP — stały na kontrahenta, z poprawną sumą kontrolną, adres)
+SELLERS = [(name, _valid_nip(nip), addr) for name, nip, addr in [
     ("SoftForge Sp. z o.o.", "6772345198", "ul. Krzemowa 12, 30-001 Kraków"),
     ("BiuroMax S.A.", "5252248481", "al. Handlowa 88, 00-950 Warszawa"),
     ("PetroTrans Sp. z o.o.", "5832917640", "ul. Paliwowa 3, 80-200 Gdańsk"),
@@ -25,8 +37,9 @@ SELLERS = [
     ("Nieruchomości Centrum Sp. z o.o.", "6762938471", "ul. Rynek 1, 31-042 Kraków"),
     ("Kancelaria Nowak i Wspólnicy", "5261048822", "ul. Prawna 15, 00-020 Warszawa"),
     ("TechSprzęt S.A.", "6342815907", "ul. Serwerowa 44, 40-001 Katowice"),
-]
+]]
 BUYER = ("GK Analytics Sp. z o.o.", "ul. Danych 10, 30-500 Kraków")
+BUYER_NIP = _valid_nip("6751234560")
 
 # katalog pozycji wg kategorii: (nazwa, jednostka, (min, max) ceny netto, stawka VAT)
 CATALOG = {
@@ -110,7 +123,7 @@ def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
         invoice_number=number,
         issue_date=issue.isoformat(), sale_date=sale.isoformat(), due_date=due.isoformat(),
         seller_name=seller_name, seller_nip=seller_nip, seller_address=seller_addr,
-        buyer_name=BUYER[0], buyer_nip="1234567890", buyer_address=BUYER[1],
+        buyer_name=BUYER[0], buyer_nip=BUYER_NIP, buyer_address=BUYER[1],
         currency="PLN", items=items,
         total_net=tnet, total_vat=tvat, total_gross=_r2(tnet + tvat),
         payment_method=rng.choice(["Przelew", "Przelew", "Gotówka", "Karta"]),
@@ -197,12 +210,13 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
 
     # wybór, w które wstrzyknąć anomalie
     anomaly_of: dict[int, str] = {}
-    picks = rng.sample(range(1, n), 5)
+    picks = rng.sample(range(1, n), 6)
     anomaly_of[picks[0]] = "duplicate"
     anomaly_of[picks[1]] = "arithmetic"
     anomaly_of[picks[2]] = "outlier"
     anomaly_of[picks[3]] = "wrong_vat"
     anomaly_of[picks[4]] = "layout"
+    anomaly_of[picks[5]] = "bad_nip"
 
     records: list[Record] = []
     for i, inv in enumerate(base):
@@ -217,7 +231,7 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
         elif anomaly == "outlier":
             # nienaturalnie wysoka, ale arytmetycznie SPÓJNA kwota (zawyżona cena jednostkowa)
             it = inv.items[0]
-            it.unit_price_net = _r2(it.unit_price_net * 20)
+            it.unit_price_net = _r2(rng.uniform(180000, 230000))  # rażąco wysoka, ale spójna kwota
             it.net = _r2(it.unit_price_net * it.quantity)
             it.vat = _r2(it.net * it.vat_rate)
             it.gross = _r2(it.net + it.vat)
@@ -239,6 +253,10 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
             inv.seller_nip = base[src].seller_nip
             inv.seller_address = base[src].seller_address
             inv.invoice_number = f"{inv.issue_date[:4]}-{rng.randint(10000, 99999)}"
+        elif anomaly == "bad_nip":
+            # NIP sprzedawcy z błędną cyfrą kontrolną (literówka / zła cyfra)
+            d = inv.seller_nip
+            inv.seller_nip = d[:9] + str((int(d[9]) + 1) % 10)
 
         fname = f"inv_{i + 1:03d}.png"
         render(inv, out / "invoices" / fname)

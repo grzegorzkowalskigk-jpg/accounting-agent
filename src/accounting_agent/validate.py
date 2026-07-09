@@ -47,6 +47,33 @@ def _pdate(s: str) -> date | None:
         return None
 
 
+# --- NIP: suma kontrolna. UWAGA: skonfigurowane WYŁĄCZNIE dla polskiego NIP.
+#     Zagraniczne numery VAT (prefiks kraju ≠ PL) mają inne reguły → pomijamy checksum.
+_NIP_WEIGHTS = [6, 5, 7, 2, 3, 4, 5, 6, 7]
+
+
+def pl_nip_checksum_ok(digits10: str) -> bool:
+    """True, gdy 10-cyfrowy polski NIP ma poprawną cyfrę kontrolną."""
+    if len(digits10) != 10 or not digits10.isdigit():
+        return False
+    c = sum(int(digits10[i]) * _NIP_WEIGHTS[i] for i in range(9)) % 11
+    return c != 10 and c == int(digits10[9])  # c==10 nie odpowiada żadnej cyfrze → NIP nieprawidłowy
+
+
+def check_nip(who: str, raw: str) -> Issue | None:
+    """Walidacja NIP: polski → suma kontrolna; zagraniczny → tylko adnotacja (poza zakresem)."""
+    norm = str(raw).strip().upper().replace(" ", "").replace("-", "")
+    cc = norm[:2]
+    if cc.isalpha() and cc != "PL":  # np. DE, FR — inny kraj, inne reguły
+        return Issue("warning", f"{who}_nip", f"NIP zagraniczny ({cc}) — checksum walidowany tylko dla PL")
+    digits = "".join(c for c in norm if c.isdigit())
+    if len(digits) != 10:
+        return Issue("warning", f"{who}_nip", f"NIP powinien mieć 10 cyfr, ma {len(digits)}")
+    if not pl_nip_checksum_ok(digits):
+        return Issue("error", f"{who}_nip", f"NIP {digits} — błędna suma kontrolna (nieprawidłowy)")
+    return None
+
+
 def validate_invoice(inv: Invoice) -> list[Issue]:
     """Zwraca listę problemów (pusta = faktura spójna)."""
     issues: list[Issue] = []
@@ -74,11 +101,11 @@ def validate_invoice(inv: Invoice) -> list[Issue]:
     if not _close(inv.total_gross, inv.total_net + inv.total_vat):
         issues.append(Issue("error", "total_gross", f"do zapłaty {inv.total_gross} ≠ netto+VAT {round(inv.total_net + inv.total_vat, 2)}"))
 
-    # 3. NIP — 10 cyfr
+    # 3. NIP — suma kontrolna (tylko PL) lub adnotacja dla zagranicznych
     for who, nip in (("seller", inv.seller_nip), ("buyer", inv.buyer_nip)):
-        digits = "".join(c for c in str(nip) if c.isdigit())
-        if len(digits) != 10:
-            issues.append(Issue("warning", f"{who}_nip", f"NIP powinien mieć 10 cyfr, ma {len(digits)}"))
+        problem = check_nip(who, nip)
+        if problem:
+            issues.append(problem)
 
     # 4. Daty
     iss, sal, due = _pdate(inv.issue_date), _pdate(inv.sale_date), _pdate(inv.due_date)

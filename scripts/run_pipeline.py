@@ -66,6 +66,7 @@ def main() -> None:
             or (inj == "outlier" and "kwota odstająca" in r["flags"])
             or (inj == "wrong_vat" and vat_warn)
             or (inj == "layout" and any("inny format" in f for f in r["flags"]))
+            or (inj == "bad_nip" and any(i.field == "seller_nip" and i.severity == "error" for i in r["issues"]))
         )
         ok += caught
         total += 1
