@@ -96,7 +96,7 @@ def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
     items: list[LineItem] = []
     for _ in range(rng.randint(1, 4)):
         name, unit, (lo, hi), vr = rng.choice(products)
-        qty = rng.choice([1, 1, 1, 2, 3, 5, 10]) if unit != "l" else rng.randint(20, 60)
+        qty = rng.choice([1, 1, 1, 2, 3]) if unit != "l" else rng.randint(20, 60)
         price = _r2(rng.uniform(lo, hi))
         net = _r2(price * qty)
         vat = _r2(net * vr)
@@ -205,15 +205,19 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
     for i, inv in enumerate(base):
         anomaly = anomaly_of.get(i)
         if anomaly == "duplicate":
-            # ten sam numer co poprzednia faktura (klasyczny duplikat w obiegu)
-            inv.invoice_number = base[i - 1].invoice_number
+            # ten sam numer co inna, POPRAWNA faktura (klasyczny duplikat w obiegu)
+            src = next(j for j in range(n) if j not in anomaly_of)
+            inv.invoice_number = base[src].invoice_number
         elif anomaly == "arithmetic":
-            # brutto nie zgadza się z netto+VAT (literówka / błąd w systemie)
+            # brutto nie zgadza się z netto+VAT (literówka / błąd w systemie) — reszta spójna
             inv.total_gross = _r2(inv.total_gross + rng.choice([10, 100, -50, 90]))
         elif anomaly == "outlier":
-            # nienaturalnie wysoka kwota jednej pozycji
+            # nienaturalnie wysoka, ale arytmetycznie SPÓJNA kwota (zawyżona cena jednostkowa)
             it = inv.items[0]
-            it.net = _r2(it.net * 12); it.vat = _r2(it.net * it.vat_rate); it.gross = _r2(it.net + it.vat)
+            it.unit_price_net = _r2(it.unit_price_net * 20)
+            it.net = _r2(it.unit_price_net * it.quantity)
+            it.vat = _r2(it.net * it.vat_rate)
+            it.gross = _r2(it.net + it.vat)
             inv.total_net = _r2(sum(x.net for x in inv.items))
             inv.total_vat = _r2(sum(x.vat for x in inv.items))
             inv.total_gross = _r2(inv.total_net + inv.total_vat)
