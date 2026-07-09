@@ -54,9 +54,11 @@ ANTHROPIC_API_KEY=sk-ant-...
 ## Stan prac
 
 - [x] Schemat danych (Pydantic)
-- [x] Generator syntetycznych faktur (obraz + ground truth, z wstrzykiwanymi anomaliami)
+- [x] Generator syntetycznych faktur (obraz + ground truth, 7 wstrzykiwanych anomalii)
+- [x] Walidacja: arytmetyka + zaokrąglenia, właściwa stawka VAT, suma kontrolna NIP (PL), daty
+- [x] Wykrywanie anomalii: duplikaty, kwoty odstające (IQR), zmiana layoutu u znanego kontrahenta
+- [x] Weryfikacja zewnętrzna (pluggable): biała lista VAT — realny klient MF + mock offline
+- [x] Kategoryzacja kosztu (baseline regułowy) + eksport do księgi (CSV/Excel)
+- [x] Ewaluacja: 7/7 anomalii wykrytych, 18/18 kategoryzacji na danych syntetycznych
 - [ ] Ekstrakcja (Claude vision → struktura)
-- [ ] Walidacja i kategoryzacja
-- [ ] Wykrywanie anomalii i duplikatów
-- [ ] Eksport do księgi + dashboard Streamlit
-- [ ] Ewaluacja dokładności
+- [ ] Dashboard Streamlit

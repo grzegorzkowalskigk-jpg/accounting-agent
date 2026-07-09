@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from accounting_agent.external import OfflineProvider  # noqa: E402
 from accounting_agent.ledger import export, summary, to_dataframe  # noqa: E402
 from accounting_agent.pipeline import process  # noqa: E402
 from accounting_agent.schema import Invoice  # noqa: E402
@@ -24,7 +25,8 @@ def main() -> None:
 
     gt = json.loads((Path(args.data) / "ground_truth.json").read_text(encoding="utf-8"))
     invoices = [Invoice.model_validate(r["truth"]) for r in gt]
-    rows = process(invoices)
+    # Provider offline (mock) — całe demo działa bez sieci; w produkcji: MFWhitelistProvider().
+    rows = process(invoices, provider=OfflineProvider())
 
     # --- raport per faktura ---
     print(f"{'Numer':<20}{'Kategoria':<30}{'Status':<14}Uwagi")
@@ -67,6 +69,7 @@ def main() -> None:
             or (inj == "wrong_vat" and vat_warn)
             or (inj == "layout" and any("inny format" in f for f in r["flags"]))
             or (inj == "bad_nip" and any(i.field == "seller_nip" and i.severity == "error" for i in r["issues"]))
+            or (inj == "vat_inactive" and bool(r["vat_note"]))
         )
         ok += caught
         total += 1

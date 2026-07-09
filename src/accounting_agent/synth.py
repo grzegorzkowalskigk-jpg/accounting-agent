@@ -12,6 +12,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .external import DEMO_INACTIVE_NIP
 from .schema import CATEGORIES, Invoice, LineItem
 
 
@@ -210,13 +211,14 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
 
     # wybór, w które wstrzyknąć anomalie
     anomaly_of: dict[int, str] = {}
-    picks = rng.sample(range(1, n), 6)
+    picks = rng.sample(range(1, n), 7)
     anomaly_of[picks[0]] = "duplicate"
     anomaly_of[picks[1]] = "arithmetic"
     anomaly_of[picks[2]] = "outlier"
     anomaly_of[picks[3]] = "wrong_vat"
     anomaly_of[picks[4]] = "layout"
     anomaly_of[picks[5]] = "bad_nip"
+    anomaly_of[picks[6]] = "vat_inactive"
 
     records: list[Record] = []
     for i, inv in enumerate(base):
@@ -257,6 +259,11 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
             # NIP sprzedawcy z błędną cyfrą kontrolną (literówka / zła cyfra)
             d = inv.seller_nip
             inv.seller_nip = d[:9] + str((int(d[9]) + 1) % 10)
+        elif anomaly == "vat_inactive":
+            # sprzedawca niezarejestrowany jako podatnik VAT (biała lista) — VAT nie do odliczenia
+            inv.seller_name = "Handel-Widmo Sp. z o.o."
+            inv.seller_nip = DEMO_INACTIVE_NIP  # poprawna suma kontrolna, ale niepodatnik w mocku
+            inv.seller_address = "ul. Nieznana 1, 00-001 Warszawa"
 
         fname = f"inv_{i + 1:03d}.png"
         render(inv, out / "invoices" / fname)
