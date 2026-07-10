@@ -4,6 +4,7 @@ Działa na obiekcie Invoice (skądkolwiek pochodzi: ground truth lub ekstrakcja)
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 
@@ -32,8 +33,26 @@ def expected_vat_rate(description: str) -> float:
 @dataclass
 class Issue:
     severity: str  # 'error' | 'warning'
-    field: str
+    field: str     # techniczna nazwa pola (dla ewaluacji/logiki) — do ludzi mówi human_note()
     message: str
+
+
+_ITEM_RE = re.compile(r"^item\[(\d+)\]")
+
+
+def human_note(issue: Issue) -> str:
+    """Komunikat gotowy do pokazania człowiekowi (księga, dashboard).
+
+    Zamiast technicznego prefiksu pola („item[1].vat_rate: …") daje „poz. 1: …";
+    pozostałe komunikaty są samowystarczalne, więc idą bez prefiksu.
+    """
+    m = _ITEM_RE.match(issue.field)
+    return f"poz. {m.group(1)}: {issue.message}" if m else issue.message
+
+
+def _m(x: float) -> str:
+    """Kwota po ludzku: 478.7 → „478,70"."""
+    return f"{x:.2f}".replace(".", ",")
 
 
 def _close(a: float, b: float, tol: float = TOL) -> bool:
@@ -62,15 +81,16 @@ def pl_nip_checksum_ok(digits10: str) -> bool:
 
 def check_nip(who: str, raw: str) -> Issue | None:
     """Walidacja NIP: polski → suma kontrolna; zagraniczny → tylko adnotacja (poza zakresem)."""
+    who_pl = "sprzedawcy" if who == "seller" else "nabywcy"
     norm = str(raw).strip().upper().replace(" ", "").replace("-", "")
     cc = norm[:2]
     if cc.isalpha() and cc != "PL":  # np. DE, FR — inny kraj, inne reguły
-        return Issue("warning", f"{who}_nip", f"NIP zagraniczny ({cc}) — checksum walidowany tylko dla PL")
+        return Issue("warning", f"{who}_nip", f"NIP {who_pl} zagraniczny ({cc}) — suma kontrolna sprawdzana tylko dla PL")
     digits = "".join(c for c in norm if c.isdigit())
     if len(digits) != 10:
-        return Issue("warning", f"{who}_nip", f"NIP powinien mieć 10 cyfr, ma {len(digits)}")
+        return Issue("warning", f"{who}_nip", f"NIP {who_pl} powinien mieć 10 cyfr, ma {len(digits)}")
     if not pl_nip_checksum_ok(digits):
-        return Issue("error", f"{who}_nip", f"NIP {digits} — błędna suma kontrolna (nieprawidłowy)")
+        return Issue("error", f"{who}_nip", f"NIP {who_pl} {digits} — błędna suma kontrolna (nieprawidłowy)")
     return None
 
 
@@ -81,25 +101,25 @@ def validate_invoice(inv: Invoice) -> list[Issue]:
     # 1. Arytmetyka pozycji
     for n, it in enumerate(inv.items, 1):
         if not _close(it.net, it.quantity * it.unit_price_net):
-            issues.append(Issue("error", f"item[{n}].net", f"netto {it.net} ≠ ilość×cena {round(it.quantity * it.unit_price_net, 2)}"))
+            issues.append(Issue("error", f"item[{n}].net", f"netto {_m(it.net)} ≠ ilość × cena {_m(it.quantity * it.unit_price_net)}"))
         if not _close(it.vat, it.net * it.vat_rate):
-            issues.append(Issue("error", f"item[{n}].vat", f"VAT {it.vat} ≠ netto×stawka {round(it.net * it.vat_rate, 2)}"))
+            issues.append(Issue("error", f"item[{n}].vat", f"VAT {_m(it.vat)} ≠ netto × stawka {_m(it.net * it.vat_rate)}"))
         if not _close(it.gross, it.net + it.vat):
-            issues.append(Issue("error", f"item[{n}].gross", f"brutto {it.gross} ≠ netto+VAT {round(it.net + it.vat, 2)}"))
+            issues.append(Issue("error", f"item[{n}].gross", f"brutto {_m(it.gross)} ≠ netto + VAT {_m(it.net + it.vat)}"))
         if it.vat_rate not in VAT_RATES:
             issues.append(Issue("warning", f"item[{n}].vat_rate", f"nietypowa stawka VAT: {it.vat_rate}"))
         exp = expected_vat_rate(it.description)
         if abs(it.vat_rate - exp) > 1e-9:
             issues.append(Issue("warning", f"item[{n}].vat_rate",
-                                f"zastosowano {int(round(it.vat_rate * 100))}% VAT — dla „{it.description[:26]}” zwykle {int(round(exp * 100))}%"))
+                                f"stawka VAT {int(round(it.vat_rate * 100))}% zamiast typowych {int(round(exp * 100))}% — „{it.description[:26]}”, do wyjaśnienia"))
 
     # 2. Arytmetyka sum
     if not _close(inv.total_net, sum(i.net for i in inv.items)):
-        issues.append(Issue("error", "total_net", f"razem netto {inv.total_net} ≠ suma pozycji {round(sum(i.net for i in inv.items), 2)}"))
+        issues.append(Issue("error", "total_net", f"razem netto {_m(inv.total_net)} ≠ suma pozycji {_m(sum(i.net for i in inv.items))}"))
     if not _close(inv.total_vat, sum(i.vat for i in inv.items)):
-        issues.append(Issue("error", "total_vat", f"razem VAT {inv.total_vat} ≠ suma pozycji {round(sum(i.vat for i in inv.items), 2)}"))
+        issues.append(Issue("error", "total_vat", f"razem VAT {_m(inv.total_vat)} ≠ suma pozycji {_m(sum(i.vat for i in inv.items))}"))
     if not _close(inv.total_gross, inv.total_net + inv.total_vat):
-        issues.append(Issue("error", "total_gross", f"do zapłaty {inv.total_gross} ≠ netto+VAT {round(inv.total_net + inv.total_vat, 2)}"))
+        issues.append(Issue("error", "total_gross", f"do zapłaty {_m(inv.total_gross)} ≠ netto + VAT {_m(inv.total_net + inv.total_vat)}"))
 
     # 3. NIP — suma kontrolna (tylko PL) lub adnotacja dla zagranicznych
     for who, nip in (("seller", inv.seller_nip), ("buyer", inv.buyer_nip)):

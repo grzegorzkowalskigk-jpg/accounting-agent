@@ -25,6 +25,7 @@ from accounting_agent.ledger import summary, to_dataframe  # noqa: E402
 from accounting_agent.pipeline import process  # noqa: E402
 from accounting_agent.schema import Invoice  # noqa: E402
 from accounting_agent.synth import generate  # noqa: E402
+from accounting_agent.validate import human_note  # noqa: E402
 
 DATA = ROOT / "data"
 SAMPLES = ROOT / "samples" / "vision"
@@ -149,7 +150,7 @@ with tab_inv:
         if r["issues"] or r["flags"] or r["vat_note"]:
             st.markdown("**Sygnały agenta:**")
             for i in r["issues"]:
-                (st.error if i.severity == "error" else st.warning)(f"[{i.field}] {i.message}")
+                (st.error if i.severity == "error" else st.warning)(human_note(i))
             for f in r["flags"]:
                 st.warning(f"🚩 {f}")
             if r["vat_note"]:

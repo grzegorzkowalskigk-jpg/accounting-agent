@@ -8,7 +8,7 @@ from .categorize import categorize
 from .detect import flags_for
 from .external import Provider
 from .schema import Invoice
-from .validate import validate_invoice
+from .validate import human_note, validate_invoice
 
 
 def process(invoices: list[Invoice], provider: Provider | None = None) -> list[dict]:
@@ -35,7 +35,8 @@ def process(invoices: list[Invoice], provider: Provider | None = None) -> list[d
             elif st.checked and st.account_whitelisted is False:
                 vat_note = f"rachunek spoza białej listy VAT ({st.source})"
 
-        notes = [f"{i.field}: {i.message}" for i in issues] + list(flags)
+        # Komunikaty dla człowieka (księga/dashboard) — bez technicznych nazw pól
+        notes = [human_note(i) for i in issues] + list(flags)
         if vat_note:
             notes.append(vat_note)
         if conf == 0.0:
