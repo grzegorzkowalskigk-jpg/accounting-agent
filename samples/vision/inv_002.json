@@ -4,7 +4,7 @@
   "sale_date": "2026-02-08",
   "due_date": "2026-02-22",
   "seller_name": "SoftForge Sp. z o.o.",
-  "seller_nip": "6772345192",
+  "seller_nip": "6772345191",
   "seller_address": "ul. Krzemowa 12, 30-001 Kraków",
   "buyer_name": "GK Analytics Sp. z o.o.",
   "buyer_nip": "6751234569",
@@ -18,7 +18,7 @@
   ],
   "total_net": 381.05,
   "total_vat": 87.65,
-  "total_gross": 468.70,
+  "total_gross": 478.70,
   "payment_method": "Przelew",
   "category": null
 }

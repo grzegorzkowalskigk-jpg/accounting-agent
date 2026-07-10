@@ -82,12 +82,16 @@ CATALOG = {
 }
 
 
+# Rodzaje kontrolowanych anomalii wstrzykiwanych do zbioru (po tyle samo z każdego rodzaju).
+ANOMALY_TYPES = ["duplicate", "arithmetic", "outlier", "wrong_vat", "layout", "bad_nip", "vat_inactive"]
+
+
 @dataclass
 class Record:
     """Wpis w zbiorze: nazwa pliku, prawda i ewentualna wstrzyknięta anomalia."""
     file: str
     truth: Invoice
-    injected_anomaly: str | None  # 'duplicate' | 'arithmetic' | 'outlier' | None
+    injected_anomaly: str | None  # jeden z ANOMALY_TYPES albo None (faktura poprawna)
 
 
 def _nip(rng: random.Random) -> str:
@@ -199,34 +203,43 @@ def render(inv: Invoice, path: Path) -> None:
 
 
 # --------------------------------------------------------------------- publiczne
-def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
+def generate(n: int, out_dir: str | Path, seed: int = 42, per_type: int | None = None) -> list[Record]:
     """Generuje n faktur (obrazy) + zwraca listę rekordów z ground truth.
 
-    Gwarantuje po jednej z anomalii: duplikat numeru, błąd arytmetyczny brutto, wartość odstająca.
+    Do zbioru wstrzykiwane są kontrolowane anomalie — po `per_type` sztuk z każdego
+    rodzaju (ANOMALY_TYPES). Domyślnie liczba skaluje się z wielkością paczki
+    (~1 na 30 faktur), reszta faktur pozostaje poprawna. Dzięki temu mamy „klucz
+    odpowiedzi": wiadomo, co agent POWINIEN wychwycić.
     """
     rng = random.Random(seed)
     out = Path(out_dir); (out / "invoices").mkdir(parents=True, exist_ok=True)
 
     base = [_make_invoice(rng, i)[0] for i in range(n)]
 
-    # wybór, w które wstrzyknąć anomalie
-    anomaly_of: dict[int, str] = {}
-    picks = rng.sample(range(1, n), 7)
-    anomaly_of[picks[0]] = "duplicate"
-    anomaly_of[picks[1]] = "arithmetic"
-    anomaly_of[picks[2]] = "outlier"
-    anomaly_of[picks[3]] = "wrong_vat"
-    anomaly_of[picks[4]] = "layout"
-    anomaly_of[picks[5]] = "bad_nip"
-    anomaly_of[picks[6]] = "vat_inactive"
+    # ile anomalii każdego rodzaju; nie więcej, niż mamy faktur (zostaw zapas czystych)
+    if per_type is None:
+        per_type = max(1, round(n / 30))
+    k = min(per_type * len(ANOMALY_TYPES), max(0, n - 1))
+    picks = rng.sample(range(1, n), k) if k else []
+    # przypisanie typów rotacyjnie → po równo z każdego rodzaju
+    anomaly_of: dict[int, str] = {idx: ANOMALY_TYPES[i % len(ANOMALY_TYPES)] for i, idx in enumerate(picks)}
+
+    # pula czystych faktur jako „źródła" dla duplikatu / zmiany layoutu (każdy inny)
+    clean = [j for j in range(n) if j not in anomaly_of]
+    src_ctr = 0
+
+    def next_clean() -> int:
+        nonlocal src_ctr
+        j = clean[src_ctr % len(clean)]
+        src_ctr += 1
+        return j
 
     records: list[Record] = []
     for i, inv in enumerate(base):
         anomaly = anomaly_of.get(i)
         if anomaly == "duplicate":
             # ten sam numer co inna, POPRAWNA faktura (klasyczny duplikat w obiegu)
-            src = next(j for j in range(n) if j not in anomaly_of)
-            inv.invoice_number = base[src].invoice_number
+            inv.invoice_number = base[next_clean()].invoice_number
         elif anomaly == "arithmetic":
             # brutto nie zgadza się z netto+VAT (literówka / błąd w systemie) — reszta spójna
             inv.total_gross = _r2(inv.total_gross + rng.choice([10, 100, -50, 90]))
@@ -250,10 +263,10 @@ def generate(n: int, out_dir: str | Path, seed: int = 42) -> list[Record]:
             inv.total_gross = _r2(inv.total_net + inv.total_vat)
         elif anomaly == "layout":
             # ten sam kontrahent co inna, poprawna faktura, ale INNY format numeru (inny system)
-            src = next(j for j in range(n) if j not in anomaly_of)
-            inv.seller_name = base[src].seller_name
-            inv.seller_nip = base[src].seller_nip
-            inv.seller_address = base[src].seller_address
+            src = base[next_clean()]
+            inv.seller_name = src.seller_name
+            inv.seller_nip = src.seller_nip
+            inv.seller_address = src.seller_address
             inv.invoice_number = f"{inv.issue_date[:4]}-{rng.randint(10000, 99999)}"
         elif anomaly == "bad_nip":
             # NIP sprzedawcy z błędną cyfrą kontrolną (literówka / zła cyfra)

@@ -15,12 +15,14 @@ from accounting_agent.synth import generate  # noqa: E402
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--n", type=int, default=12, help="liczba faktur")
+    ap.add_argument("--n", type=int, default=60, help="liczba faktur")
     ap.add_argument("--out", type=str, default="data", help="katalog wyjściowy")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--per-type", type=int, default=None,
+                    help="ile anomalii każdego rodzaju (domyślnie ~1 na 30 faktur)")
     args = ap.parse_args()
 
-    records = generate(args.n, args.out, seed=args.seed)
+    records = generate(args.n, args.out, seed=args.seed, per_type=args.per_type)
 
     truth = [{"file": r.file, "injected_anomaly": r.injected_anomaly, "truth": r.truth.model_dump()}
              for r in records]

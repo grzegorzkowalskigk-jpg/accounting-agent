@@ -53,9 +53,11 @@ def main() -> None:
     correct = sum(1 for r_gt, r in zip(gt, rows) if r["category"] == r_gt["truth"].get("category"))
     print(f"\nKATEGORYZACJA (baseline regułowy): {correct}/{len(rows)} zgodnych z prawdą ({100 * correct // len(rows)}%)")
 
-    # --- ewaluacja: czy złapaliśmy wstrzyknięte anomalie? ---
-    print("\nEWALUACJA WYKRYWANIA ANOMALII")
-    ok = total = 0
+    # --- ewaluacja: czy złapaliśmy wstrzyknięte anomalie? (nasz „klucz odpowiedzi") ---
+    from collections import defaultdict
+    print("\nEWALUACJA WYKRYWANIA ANOMALII (per rodzaj)")
+    stat: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # typ -> [wykryte, wszystkie]
+    misses: list[tuple[str, str]] = []
     for r_gt, r in zip(gt, rows):
         inj = r_gt["injected_anomaly"]
         if not inj:
@@ -71,10 +73,18 @@ def main() -> None:
             or (inj == "bad_nip" and any(i.field == "seller_nip" and i.severity == "error" for i in r["issues"]))
             or (inj == "vat_inactive" and bool(r["vat_note"]))
         )
-        ok += caught
-        total += 1
-        print(f"  {r_gt['file']:<22} wstrzyknięto={inj:<12} -> {'ZŁAPANE' if caught else 'PRZEOCZONE'}")
-    print(f"  Wynik: {ok}/{total} anomalii wykrytych")
+        stat[inj][0] += int(caught)
+        stat[inj][1] += 1
+        if not caught:
+            misses.append((r_gt["file"], inj))
+    for inj in sorted(stat):
+        c, t = stat[inj]
+        print(f"  {inj:<14} {c}/{t} {'OK' if c == t else 'BRAKI'}")
+    for f, inj in misses:
+        print(f"  PRZEOCZONE: {f} ({inj})")
+    ok = sum(v[0] for v in stat.values())
+    total = sum(v[1] for v in stat.values())
+    print(f"  RAZEM: {ok}/{total} anomalii wykrytych")
 
 
 if __name__ == "__main__":

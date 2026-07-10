@@ -37,7 +37,7 @@ def load() -> tuple[list[dict], list[str], list[str | None]]:
     """Wczytuje (generuje przy pierwszym uruchomieniu) faktury i przepuszcza przez pipeline."""
     if not (DATA / "ground_truth.json").exists():
         with st.spinner("Generuję syntetyczne faktury…"):
-            generate(18, DATA)
+            generate(60, DATA)
     gt = json.loads((DATA / "ground_truth.json").read_text(encoding="utf-8"))
     invoices = [Invoice.model_validate(r["truth"]) for r in gt]
     files = [r["file"].split("/")[-1] for r in gt]
@@ -87,7 +87,7 @@ k[4].metric("Razem brutto", f"{s['total_gross']:,.0f} zł".replace(",", " "))
 with st.sidebar:
     st.header("O demie")
     st.markdown(
-        "- Dane **syntetyczne** (18 faktur, ziarno stałe)\n"
+        f"- Dane **syntetyczne** ({s['count']} faktur, ziarno stałe)\n"
         "- Weryfikacja VAT: **mock offline** (bez sieci)\n"
         "- Ekstrakcja wizją: próbki `samples/vision/`\n"
         "- Produkcja: `AnthropicVisionExtractor` + `MFWhitelistProvider`"

@@ -1,0 +1,24 @@
+{
+  "invoice_number": "FV/2026/05/0011",
+  "issue_date": "2026-05-25",
+  "sale_date": "2026-05-24",
+  "due_date": "2026-06-08",
+  "seller_name": "TechSprzęt S.A.",
+  "seller_nip": "6342815903",
+  "seller_address": "ul. Serwerowa 44, 40-001 Katowice",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Zestaw długopisów", "quantity": 1, "unit": "opak.", "unit_price_net": 12.51, "vat_rate": 0.08, "net": 12.51, "vat": 1.00, "gross": 13.51},
+    {"description": "Zestaw długopisów", "quantity": 2, "unit": "opak.", "unit_price_net": 24.39, "vat_rate": 0.23, "net": 48.78, "vat": 11.22, "gross": 60.00},
+    {"description": "Zestaw długopisów", "quantity": 1, "unit": "opak.", "unit_price_net": 20.12, "vat_rate": 0.23, "net": 20.12, "vat": 4.63, "gross": 24.75},
+    {"description": "Toner do drukarki", "quantity": 1, "unit": "szt.", "unit_price_net": 233.91, "vat_rate": 0.23, "net": 233.91, "vat": 53.80, "gross": 287.71}
+  ],
+  "total_net": 315.32,
+  "total_vat": 70.65,
+  "total_gross": 385.97,
+  "payment_method": "Karta",
+  "category": null
+}

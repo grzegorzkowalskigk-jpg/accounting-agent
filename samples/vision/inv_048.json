@@ -1,0 +1,24 @@
+{
+  "invoice_number": "FV/2026/01/0048",
+  "issue_date": "2026-01-19",
+  "sale_date": "2026-01-17",
+  "due_date": "2026-02-18",
+  "seller_name": "TechSprzęt S.A.",
+  "seller_nip": "6342815903",
+  "seller_address": "ul. Serwerowa 44, 40-001 Katowice",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Toner do drukarki", "quantity": 1, "unit": "szt.", "unit_price_net": 211162.97, "vat_rate": 0.23, "net": 211162.97, "vat": 48567.48, "gross": 259730.45},
+    {"description": "Papier ksero A4 (ryza)", "quantity": 1, "unit": "szt.", "unit_price_net": 29.29, "vat_rate": 0.23, "net": 29.29, "vat": 6.74, "gross": 36.03},
+    {"description": "Toner do drukarki", "quantity": 1, "unit": "szt.", "unit_price_net": 333.75, "vat_rate": 0.23, "net": 333.75, "vat": 76.76, "gross": 410.51},
+    {"description": "Toner do drukarki", "quantity": 2, "unit": "szt.", "unit_price_net": 139.26, "vat_rate": 0.23, "net": 278.52, "vat": 64.06, "gross": 342.58}
+  ],
+  "total_net": 211804.53,
+  "total_vat": 48715.04,
+  "total_gross": 260519.57,
+  "payment_method": "Przelew",
+  "category": null
+}

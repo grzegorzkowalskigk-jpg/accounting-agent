@@ -1,0 +1,24 @@
+{
+  "invoice_number": "FV/2026/04/0043",
+  "issue_date": "2026-04-28",
+  "sale_date": "2026-04-26",
+  "due_date": "2026-05-12",
+  "seller_name": "Nieruchomości Centrum Sp. z o.o.",
+  "seller_nip": "6762938476",
+  "seller_address": "ul. Rynek 1, 31-042 Kraków",
+  "buyer_name": "GK Analytics Sp. z o.o.",
+  "buyer_nip": "6751234569",
+  "buyer_address": "ul. Danych 10, 30-500 Kraków",
+  "currency": "PLN",
+  "items": [
+    {"description": "Licencja oprogramowania (mies.)", "quantity": 1, "unit": "mies.", "unit_price_net": 494.87, "vat_rate": 0.23, "net": 494.87, "vat": 113.82, "gross": 608.69},
+    {"description": "Usługa wdrożeniowa", "quantity": 1, "unit": "godz.", "unit_price_net": 296.06, "vat_rate": 0.23, "net": 296.06, "vat": 68.09, "gross": 364.15},
+    {"description": "Hosting serwera VPS", "quantity": 1, "unit": "mies.", "unit_price_net": 156.72, "vat_rate": 0.23, "net": 156.72, "vat": 36.05, "gross": 192.77},
+    {"description": "Hosting serwera VPS", "quantity": 1, "unit": "mies.", "unit_price_net": 57.98, "vat_rate": 0.23, "net": 57.98, "vat": 13.34, "gross": 71.32}
+  ],
+  "total_net": 1005.63,
+  "total_vat": 231.30,
+  "total_gross": 1236.93,
+  "payment_method": "Karta",
+  "category": null
+}

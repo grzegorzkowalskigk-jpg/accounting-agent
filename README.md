@@ -21,7 +21,62 @@ skan faktury (PNG)
 ```
 
 Ewaluacja: wynik ekstrakcji porównywany z „ground truth" wygenerowanym razem z fakturą
-— mierzymy dokładność pól, zanim zaufamy modelowi.
+— mierzymy dokładność pól, zanim zaufamy modelowi. Więcej niżej: *Jak agent uczy się
+poprawnie sprawdzać faktury?*
+
+## Jak agent „uczy się" poprawnie sprawdzać faktury?
+
+Krótka, uczciwa odpowiedź: **nie ma tu jednego „silnika AI, który sam się uczy na tysiącach
+faktur"**. Inteligencja agenta pochodzi z dwóch różnych źródeł i warto je rozdzielić.
+
+**1. Czytanie faktury — gotowy model, którego nie trenujemy.**
+Odczytanie danych z obrazu robi Claude — duży model, który „widzi" i rozumie dokumenty już
+z fabryki. Nie uczymy go od zera na naszych fakturach; dajemy mu instrukcję (co odczytać i
+w jakim formacie) i sprawdzamy, czy się nie myli. To jak zatrudnienie doświadczonego
+księgowego: nie uczysz go czytać — dajesz wytyczne i kontrolujesz jakość.
+
+**2. Ocena faktury — jawne reguły, nie „czarna skrzynka".**
+Czy 23% VAT policzono dobrze, czy NIP ma poprawną sumę kontrolną, czy numer się nie powtarza
+— to nie „przeczucie modelu", tylko konkretne, zapisane reguły księgowe. Są przejrzyste i da
+się je uzasadnić jednym zdaniem („brutto ≠ netto + VAT, różnica 10 zł"). Dla firmy to zaleta:
+księgowość musi umieć wytłumaczyć, dlaczego coś odrzuciła.
+
+**Skąd więc wiemy, że działa? Z klucza odpowiedzi.**
+Skoro modelu nie trenujemy, „nauka" polega na czymś innym — na ciągłym **mierzeniu**.
+Generujemy własne faktury, do których znamy prawidłową odpowiedź (bo sami je tworzymy — to
+nasz *ground truth*, czyli klucz odpowiedzi), i **celowo podrzucamy do nich znane błędy** —
+jak nauczyciel, który wsuwa do stosu prac kilka z zaplanowanymi pomyłkami, żeby sprawdzić, czy
+egzaminator je wyłapie. Potem liczymy trzy rzeczy:
+- czy agent odczytał każde pole zgodnie z obrazem (**dokładność ekstrakcji**),
+- czy złapał każdy podrzucony błąd (**skuteczność kontroli**),
+- czy trafił z kategorią kosztu (**dokładność klasyfikacji**).
+
+Każda nowa reguła trafia do repozytorium **razem z nowym podrzuconym błędem** w zbiorze
+testowym. Dzięki temu od razu widać, czy reguła działa — i czy przypadkiem nie zepsuła
+czegoś, co wcześniej było poprawne.
+
+**Zbiór testowy — i kiedy potrzebny byłby treningowy i walidacyjny.**
+Dziś nasz zbiór syntetyczny pełni rolę **zbioru testowego**: dane z gotowym kluczem
+odpowiedzi, na których egzaminujemy agenta. Klasycznego **zbioru treningowego** i
+**walidacyjnego** (typowy podział 70% / 15% / 15%) nie ma, bo nie ma tu uczenia „od danych"
+— reguły piszemy ręcznie, a model do czytania jest wytrenowany fabrycznie.
+Trzy zbiory staną się potrzebne dopiero, gdy któryś element zamienimy na komponent **uczony
+na danych** — np. gdy dzisiejszą kategoryzację po słowach kluczowych zastąpimy klasyfikatorem
+uczonym na przykładach. Wtedy:
+- **treningowy** — na nim model uczy się wzorców,
+- **walidacyjny** — na nim stroimy ustawienia i pilnujemy, żeby nie „wykuł się na pamięć" (przeuczenie),
+- **testowy** — odłożony do samego końca, ostateczny sprawdzian na danych, których model nie widział.
+
+**Dlaczego faktury syntetyczne, a nie prawdziwe?** Po pierwsze prywatność — nie ryzykujemy
+danymi realnych kontrahentów. Po drugie, nie da się zmierzyć wykrywacza błędów bez błędów do
+wykrycia — a te musimy znać z góry. Po trzecie, próbę możemy dowolnie powiększać i dokładać
+nowe scenariusze. W produkcji ten sam agent działa na prawdziwych fakturach — zmienia się
+tylko źródło obrazów, nie logika.
+
+**Aktualny wynik (próba 60 faktur, po 2 z każdego z 7 rodzajów anomalii):**
+- **266/266** pól ekstrakcji odczytanych poprawnie (100%) — na próbkach zweryfikowanych wizją,
+- **14/14** podrzuconych anomalii wykrytych,
+- **60/60** trafionych kategorii kosztu.
 
 ## Struktura
 
@@ -49,7 +104,7 @@ app.py           # dashboard demo (Streamlit)
 ```bash
 python -m venv .venv && .venv\Scripts\activate      # (Linux/Mac: source .venv/bin/activate)
 pip install -r requirements.txt
-python scripts/generate_data.py --n 18              # generuje syntetyczne faktury do data/
+python scripts/generate_data.py --n 60              # generuje syntetyczne faktury do data/
 python scripts/run_pipeline.py                      # agent: walidacja + anomalie + księga + ewaluacja
 python scripts/extract_data.py                      # dokładność ekstrakcji (replay, bez klucza)
 streamlit run app.py                                # dashboard demo (bez klucza)
@@ -68,11 +123,11 @@ mocka offline, a ekstrakcję wizją pokazują próbki w `samples/vision/` (100% 
 ## Stan prac
 
 - [x] Schemat danych (Pydantic)
-- [x] Generator syntetycznych faktur (obraz + ground truth, 7 wstrzykiwanych anomalii)
+- [x] Generator syntetycznych faktur (obraz + ground truth, 7 rodzajów anomalii, skalowalna próba)
 - [x] Walidacja: arytmetyka + zaokrąglenia, właściwa stawka VAT, suma kontrolna NIP (PL), daty
 - [x] Wykrywanie anomalii: duplikaty, kwoty odstające (IQR), zmiana layoutu u znanego kontrahenta
 - [x] Weryfikacja zewnętrzna (pluggable): biała lista VAT — realny klient MF + mock offline
 - [x] Kategoryzacja kosztu (baseline regułowy) + eksport do księgi (CSV/Excel)
 - [x] Ekstrakcja (Claude vision → struktura) + tryb replay bez klucza; próbki w samples/vision/
 - [x] Dashboard Streamlit (księga, szczegóły faktury, przegląd kontroli, dokładność ekstrakcji)
-- [x] Ewaluacja: 7/7 anomalii, 18/18 kategoryzacji, 242/242 pól ekstrakcji (100%)
+- [x] Ewaluacja (próba 60 faktur): 14/14 anomalii, 60/60 kategoryzacji, 266/266 pól ekstrakcji (100%)
