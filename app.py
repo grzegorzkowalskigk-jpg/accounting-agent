@@ -186,14 +186,15 @@ with tab_extract:
         if d:
             tot_m += d.matched
             tot_t += d.total
+        # Skala 0–100: ProgressColumn formatuje surową wartość, więc 1.0 pokazałoby „1%"
         recs.append({"Plik": fn, "Pól poprawnych": f"{d.matched}/{d.total}" if d else "—",
-                     "Dokładność": d.accuracy if d else None})
+                     "Dokładność": round(100 * d.accuracy, 1) if d else None})
 
     st.metric("Dokładność ekstrakcji (pola)", f"{100 * tot_m / tot_t:.1f}%" if tot_t else "—",
               help=f"{tot_m}/{tot_t} pól na {len(sample_files)} próbkach")
     st.dataframe(pd.DataFrame(recs), hide_index=True, use_container_width=True,
                  column_config={"Dokładność": st.column_config.ProgressColumn(
-                     format="%.0f%%", min_value=0, max_value=1)})
+                     format="%.0f%%", min_value=0, max_value=100)})
 
     pick = st.selectbox("Podgląd odczytu", sample_files)
     pred = replay.extract(pick)
