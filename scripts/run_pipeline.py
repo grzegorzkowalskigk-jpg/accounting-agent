@@ -1,7 +1,9 @@
-"""Uruchamia pipeline na wygenerowanych fakturach (ground truth), drukuje raport,
-eksportuje księgę i sprawdza, czy złapaliśmy wstrzyknięte anomalie.
+"""EN: Runs the pipeline over the generated invoices, prints the report, exports
+the ledger and checks the injected anomalies were caught.
+PL: Uruchamia potok na wygenerowanych fakturach, wypisuje raport, eksportuje
+ksiege i sprawdza, czy wstrzykniete anomalie zostaly zlapane.
 
-    python scripts/run_pipeline.py --data data --out out
+Usage / Uruchomienie: python scripts/run_pipeline.py --data data
 """
 from __future__ import annotations
 
@@ -18,6 +20,9 @@ from accounting_agent.schema import Invoice  # noqa: E402
 
 
 def main() -> None:
+    """EN: Processes the invoices and reports the outcome.
+    PL: Przetwarza faktury i raportuje wynik.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data")
     ap.add_argument("--out", default="out")

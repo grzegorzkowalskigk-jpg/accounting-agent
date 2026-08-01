@@ -1,6 +1,7 @@
-"""Generuje zbiór syntetycznych faktur: obrazy + ground_truth.json.
+"""EN: Generates a synthetic invoice set: PNG images plus ground_truth.json.
+PL: Generuje zbior syntetycznych faktur: obrazy PNG oraz ground_truth.json.
 
-    python scripts/generate_data.py --n 12 --out data
+Usage / Uruchomienie: python scripts/generate_data.py --n 12 --out data
 """
 from __future__ import annotations
 
@@ -14,6 +15,9 @@ from accounting_agent.synth import generate  # noqa: E402
 
 
 def main() -> None:
+    """EN: Writes images and the ground truth file.
+    PL: Zapisuje obrazy i plik danych wzorcowych.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=60, help="liczba faktur")
     ap.add_argument("--out", type=str, default="data", help="katalog wyjściowy")

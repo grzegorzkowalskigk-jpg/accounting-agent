@@ -1,4 +1,6 @@
-"""Budowa księgi z przetworzonych faktur + eksport i podsumowanie."""
+"""EN: Builds the ledger from processed invoices, exports it and summarises it.
+PL: Buduje ksiege z przetworzonych faktur, eksportuje ja i podsumowuje.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,7 +11,9 @@ from .schema import Invoice
 
 
 def to_dataframe(rows: list[dict]) -> pd.DataFrame:
-    """rows: lista dictów z pipeline.process() (invoice + category + status + flags)."""
+    """EN: Turns pipeline records into a table.
+    PL: Zamienia rekordy potoku na tabele.
+    """
     recs = []
     for r in rows:
         inv: Invoice = r["invoice"]
@@ -29,7 +33,9 @@ def to_dataframe(rows: list[dict]) -> pd.DataFrame:
 
 
 def export(df: pd.DataFrame, out_dir: str | Path) -> dict[str, str]:
-    """Zapisuje księgę do CSV i XLSX. Zwraca ścieżki."""
+    """EN: Writes the ledger to CSV and XLSX; returns the paths.
+    PL: Zapisuje ksiege do CSV i XLSX; zwraca sciezki.
+    """
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     csv_p, xlsx_p = out / "ksiega.csv", out / "ksiega.xlsx"
     df.to_csv(csv_p, index=False, encoding="utf-8-sig")
@@ -41,7 +47,9 @@ def export(df: pd.DataFrame, out_dir: str | Path) -> dict[str, str]:
 
 
 def summary(rows: list[dict]) -> dict:
-    """Zagregowane liczby: sumy, podział wg kategorii, liczba faktur do przeglądu."""
+    """EN: Aggregated totals, split by category and items needing review.
+    PL: Sumy zagregowane, podzial wg kategorii i pozycje do przegladu.
+    """
     total_net = sum(r["invoice"].total_net for r in rows)
     total_vat = sum(r["invoice"].total_vat for r in rows)
     total_gross = sum(r["invoice"].total_gross for r in rows)

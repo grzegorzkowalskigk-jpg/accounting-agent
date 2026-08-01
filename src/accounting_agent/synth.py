@@ -1,7 +1,7 @@
-"""Generator syntetycznych faktur VAT: realistyczny obraz PNG + prawda (ground truth).
-
-Wstrzykuje kontrolowane anomalie (duplikat numeru, błąd arytmetyczny, wartość odstająca),
-żeby później było na czym testować walidację i wykrywanie anomalii agenta.
+"""EN: Synthetic invoice generator: a realistic PNG plus ground truth, with
+controlled anomalies injected so detection can be measured.
+PL: Generator syntetycznych faktur: realistyczny PNG oraz dane wzorcowe,
+z wstrzykiwanymi kontrolowanymi anomaliami, by dalo sie mierzyc wykrywanie.
 """
 from __future__ import annotations
 
@@ -17,7 +17,9 @@ from .schema import CATEGORIES, Invoice, LineItem
 
 
 def _valid_nip(nip: str) -> str:
-    """Zwraca 10-cyfrowy NIP z POPRAWNĄ cyfrą kontrolną (na bazie pierwszych 9 cyfr wejścia)."""
+    """EN: Returns a 10-digit tax id with a valid checksum.
+    PL: Zwraca 10-cyfrowy NIP z poprawna cyfra kontrolna.
+    """
     w = [6, 5, 7, 2, 3, 4, 5, 6, 7]
     d = ("".join(c for c in nip if c.isdigit()) + "000000000")[:9]
     c = sum(int(d[i]) * w[i] for i in range(9)) % 11
@@ -95,14 +97,17 @@ class Record:
 
 
 def _nip(rng: random.Random) -> str:
+    """EN: Draws a random valid tax id. / PL: Losuje poprawny NIP."""
     return "".join(str(rng.randint(0, 9)) for _ in range(10))
 
 
 def _r2(x: float) -> float:
+    """EN: Rounds to two decimals. / PL: Zaokragla do dwoch miejsc."""
     return round(x + 1e-9, 2)
 
 
 def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
+    """EN: Builds one invoice record. / PL: Buduje jeden rekord faktury."""
     seller_name, seller_nip, seller_addr = rng.choice(SELLERS)
     category = rng.choice(CATEGORIES)
     products = CATALOG[category]
@@ -139,6 +144,7 @@ def _make_invoice(rng: random.Random, idx: int) -> tuple[Invoice, str]:
 
 # ------------------------------------------------------------------- rendering
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    """EN: Loads a font at the given size. / PL: Wczytuje czcionke w zadanym rozmiarze."""
     path = "C:/Windows/Fonts/arial" + ("bd" if bold else "") + ".ttf"
     try:
         return ImageFont.truetype(path, size)
@@ -147,10 +153,14 @@ def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
 
 
 def _money(x: float) -> str:
+    """EN: Formats an amount for display. / PL: Formatuje kwote do wyswietlenia."""
     return f"{x:,.2f}".replace(",", " ").replace(".", ",")
 
 
 def render(inv: Invoice, path: Path) -> None:
+    """EN: Renders an invoice record to a PNG image.
+    PL: Renderuje rekord faktury do obrazu PNG.
+    """
     W, H = 1000, 1400
     img = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(img)
@@ -167,6 +177,9 @@ def render(inv: Invoice, path: Path) -> None:
 
     # Sprzedawca / Nabywca
     def party(x: int, title: str, name: str, nip: str, addr: str) -> None:
+        """EN: Draws a party block (seller or buyer) on the image.
+        PL: Rysuje blok strony (sprzedawca albo nabywca) na obrazie.
+        """
         d.text((x, 150), title, font=fss, fill=gray)
         d.text((x, 170), name, font=fb, fill=ink)
         d.text((x, 192), f"NIP: {nip}", font=fs, fill=ink)
@@ -204,12 +217,8 @@ def render(inv: Invoice, path: Path) -> None:
 
 # --------------------------------------------------------------------- publiczne
 def generate(n: int, out_dir: str | Path, seed: int = 42, per_type: int | None = None) -> list[Record]:
-    """Generuje n faktur (obrazy) + zwraca listę rekordów z ground truth.
-
-    Do zbioru wstrzykiwane są kontrolowane anomalie — po `per_type` sztuk z każdego
-    rodzaju (ANOMALY_TYPES). Domyślnie liczba skaluje się z wielkością paczki
-    (~1 na 30 faktur), reszta faktur pozostaje poprawna. Dzięki temu mamy „klucz
-    odpowiedzi": wiadomo, co agent POWINIEN wychwycić.
+    """EN: Generates n invoices with images and returns the ground truth.
+    PL: Generuje n faktur z obrazami i zwraca dane wzorcowe.
     """
     rng = random.Random(seed)
     out = Path(out_dir); (out / "invoices").mkdir(parents=True, exist_ok=True)
@@ -229,6 +238,9 @@ def generate(n: int, out_dir: str | Path, seed: int = 42, per_type: int | None =
     src_ctr = 0
 
     def next_clean() -> int:
+        """EN: Returns the next invoice without an anomaly.
+        PL: Zwraca kolejna fakture bez anomalii.
+        """
         nonlocal src_ctr
         j = clean[src_ctr % len(clean)]
         src_ctr += 1

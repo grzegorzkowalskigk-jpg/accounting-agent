@@ -1,6 +1,7 @@
-"""Walidacja faktury — kontrole poprawności, które łapią błędy zanim trafią do księgi.
-
-Działa na obiekcie Invoice (skądkolwiek pochodzi: ground truth lub ekstrakcja).
+"""EN: Invoice validation - checks that catch errors before an invoice reaches
+the ledger (arithmetic, tax id, dates, VAT rates).
+PL: Walidacja faktury - kontrole lapiace bledy, zanim faktura trafi do ksiegi
+(arytmetyka, NIP, daty, stawki VAT).
 """
 from __future__ import annotations
 
@@ -22,7 +23,9 @@ REDUCED_RATE_KEYWORDS: dict[float, list[str]] = {
 
 
 def expected_vat_rate(description: str) -> float:
-    """Typowa stawka VAT dla danej pozycji (23% domyślnie, obniżone dla wyjątków)."""
+    """EN: Typical VAT rate for a line description.
+    PL: Typowa stawka VAT dla opisu pozycji.
+    """
     d = description.lower()
     for rate, keywords in REDUCED_RATE_KEYWORDS.items():
         if any(k in d for k in keywords):
@@ -41,25 +44,27 @@ _ITEM_RE = re.compile(r"^item\[(\d+)\]")
 
 
 def human_note(issue: Issue) -> str:
-    """Komunikat gotowy do pokazania człowiekowi (księga, dashboard).
-
-    Zamiast technicznego prefiksu pola („item[1].vat_rate: …") daje „poz. 1: …";
-    pozostałe komunikaty są samowystarczalne, więc idą bez prefiksu.
+    """EN: Turns a technical issue into a message for a person.
+    PL: Zamienia techniczny problem w komunikat dla czlowieka.
     """
     m = _ITEM_RE.match(issue.field)
     return f"poz. {m.group(1)}: {issue.message}" if m else issue.message
 
 
 def _m(x: float) -> str:
-    """Kwota po ludzku: 478.7 → „478,70"."""
+    """EN: Formats an amount for display. / PL: Formatuje kwote do wyswietlenia."""
     return f"{x:.2f}".replace(".", ",")
 
 
 def _close(a: float, b: float, tol: float = TOL) -> bool:
+    """EN: Compares two amounts within a tolerance.
+    PL: Porownuje dwie kwoty z tolerancja.
+    """
     return abs(a - b) <= tol
 
 
 def _pdate(s: str) -> date | None:
+    """EN: Parses a date string. / PL: Parsuje date z napisu."""
     try:
         return date.fromisoformat(s)
     except (ValueError, TypeError):
@@ -72,7 +77,9 @@ _NIP_WEIGHTS = [6, 5, 7, 2, 3, 4, 5, 6, 7]
 
 
 def pl_nip_checksum_ok(digits10: str) -> bool:
-    """True, gdy 10-cyfrowy polski NIP ma poprawną cyfrę kontrolną."""
+    """EN: Validates a Polish tax id checksum.
+    PL: Sprawdza cyfre kontrolna polskiego NIP-u.
+    """
     if len(digits10) != 10 or not digits10.isdigit():
         return False
     c = sum(int(digits10[i]) * _NIP_WEIGHTS[i] for i in range(9)) % 11
@@ -80,7 +87,9 @@ def pl_nip_checksum_ok(digits10: str) -> bool:
 
 
 def check_nip(who: str, raw: str) -> Issue | None:
-    """Walidacja NIP: polski → suma kontrolna; zagraniczny → tylko adnotacja (poza zakresem)."""
+    """EN: Validates a tax id; foreign ones are only annotated.
+    PL: Waliduje NIP; zagraniczne sa tylko odnotowywane.
+    """
     who_pl = "sprzedawcy" if who == "seller" else "nabywcy"
     norm = str(raw).strip().upper().replace(" ", "").replace("-", "")
     cc = norm[:2]
@@ -95,7 +104,9 @@ def check_nip(who: str, raw: str) -> Issue | None:
 
 
 def validate_invoice(inv: Invoice) -> list[Issue]:
-    """Zwraca listę problemów (pusta = faktura spójna)."""
+    """EN: Returns the list of issues; empty means consistent.
+    PL: Zwraca liste problemow; pusta oznacza fakture spojna.
+    """
     issues: list[Issue] = []
 
     # 1. Arytmetyka pozycji
@@ -138,4 +149,7 @@ def validate_invoice(inv: Invoice) -> list[Issue]:
 
 
 def is_valid(inv: Invoice) -> bool:
+    """EN: Tells whether an invoice has no issues.
+    PL: Mowi, czy faktura nie ma zadnych problemow.
+    """
     return not any(i.severity == "error" for i in validate_invoice(inv))

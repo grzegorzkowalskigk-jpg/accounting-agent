@@ -1,4 +1,8 @@
-"""Modele danych faktury (Pydantic) — wspólny kontrakt dla generatora, ekstrakcji i walidacji."""
+"""EN: Invoice data models (Pydantic) - the shared contract for the generator,
+extraction and validation.
+PL: Modele danych faktury (Pydantic) - wspolny kontrakt dla generatora,
+ekstrakcji i walidacji.
+"""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

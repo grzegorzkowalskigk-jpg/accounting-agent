@@ -1,6 +1,7 @@
-"""Orkiestracja: faktury → walidacja + kategoryzacja + wykrywanie anomalii → wynik.
-
-Wejściem jest lista Invoice (na razie z ground truth; docelowo z ekstrakcji Claude).
+"""EN: Orchestration: invoices through validation, categorisation and anomaly
+detection into ledger-ready records.
+PL: Orkiestracja: faktury przez walidacje, kategoryzacje i wykrywanie anomalii
+do rekordow gotowych do ksiegi.
 """
 from __future__ import annotations
 
@@ -12,11 +13,8 @@ from .validate import human_note, validate_invoice
 
 
 def process(invoices: list[Invoice], provider: Provider | None = None) -> list[dict]:
-    """Zwraca listę rekordów: {invoice, category, category_conf, issues, flags, vat_note, status, notes}.
-
-    status: 'OK' | 'DO PRZEGLĄDU' — faktura idzie do człowieka, gdy ma błąd, złą stawkę,
-    anomalię (duplikat/outlier/format) lub gdy zewnętrzny rejestr (provider) zgłasza problem.
-    provider (opcjonalny): weryfikacja w rejestrze zewnętrznym, np. biała lista VAT.
+    """EN: Returns a record per invoice with category, issues, flags and status.
+    PL: Zwraca rekord na fakture z kategoria, problemami, tagami i statusem.
     """
     batch_flags = flags_for(invoices)
     results: list[dict] = []

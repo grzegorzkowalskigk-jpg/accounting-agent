@@ -1,13 +1,9 @@
-"""Ekstrakcja faktur (obraz → struktura) + pomiar dokładności względem ground truth.
+"""EN: Invoice extraction (image to structure) with accuracy measured against the
+ground truth; runs in replay mode when no API key is present.
+PL: Ekstrakcja faktur (obraz na strukture) z pomiarem dokladnosci wobec danych
+wzorcowych; bez klucza API dziala w trybie odtwarzania.
 
-Domyślnie (bez klucza) działa w trybie REPLAY na próbkach zweryfikowanych wizją Claude
-(samples/vision/) — pokazuje dokładność odczytu bez sieci:
-
-    python scripts/extract_data.py
-
-Tryb produkcyjny (Claude vision na wszystkich obrazach, wymaga ANTHROPIC_API_KEY):
-
-    python scripts/extract_data.py --live --out data/extracted
+Usage / Uruchomienie: python scripts/extract_data.py --data data
 """
 from __future__ import annotations
 
@@ -26,6 +22,9 @@ from accounting_agent.schema import Invoice  # noqa: E402
 
 
 def main() -> None:
+    """EN: Extracts every invoice and prints per-field accuracy.
+    PL: Wyciaga dane z kazdej faktury i wypisuje dokladnosc per pole.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data", help="katalog z ground_truth.json i invoices/")
     ap.add_argument("--samples", default="samples/vision", help="katalog z ekstrakcjami (tryb replay)")

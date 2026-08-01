@@ -1,7 +1,7 @@
-"""Kategoryzacja kosztu — przypisanie faktury do kategoryzacji księgowej.
-
-Baseline regułowy (bez klucza API): dopasowanie słów kluczowych w nazwach pozycji.
-Docelowo do podmiany/uzupełnienia klasyfikacją LLM (dla trudnych przypadków).
+"""EN: Expense categorisation - a rule baseline matching keywords in line
+descriptions, with a confidence score.
+PL: Kategoryzacja kosztu - baseline regulowy dopasowujacy slowa kluczowe
+w opisach pozycji, wraz z miara pewnosci.
 """
 from __future__ import annotations
 
@@ -21,7 +21,9 @@ RULES: list[tuple[str, list[str]]] = [
 
 
 def categorize(inv: Invoice) -> tuple[str, float]:
-    """Zwraca (kategoria, pewność 0..1). Pewność = udział pozycji trafionych regułą."""
+    """EN: Returns (category, confidence 0..1).
+    PL: Zwraca (kategoria, pewnosc 0..1).
+    """
     text = " ".join(it.description.lower() for it in inv.items)
     for category, keywords in RULES:
         if any(kw in text for kw in keywords):

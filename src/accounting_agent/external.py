@@ -1,11 +1,7 @@
-"""Weryfikacja kontrahenta w zewnętrznych rejestrach — pluggable.
-
-Provider = wspólny interfejs. Wymienny backend:
-- OfflineProvider  — mock do dema/testów bez sieci (konfigurowalne listy).
-- MFWhitelistProvider — realny klient Białej Listy VAT (Ministerstwo Finansów, wymaga sieci).
-
-To samo miejsce podłączenia dla innych rejestrów (np. BIK / listy zaległości —
-API komercyjne): wystarczy nowy Provider z metodą verify().
+"""EN: Vendor verification against external registries; pluggable providers with
+an offline mock for demos and tests.
+PL: Weryfikacja kontrahenta w zewnetrznych rejestrach; wymienne backendy
+z atrapa offline do dema i testow.
 """
 from __future__ import annotations
 
@@ -34,6 +30,7 @@ class Provider(Protocol):
 
 
 def _digits(s: str) -> str:
+    """EN: Keeps digits only. / PL: Zostawia same cyfry."""
     return "".join(c for c in str(s) if c.isdigit())
 
 
@@ -41,10 +38,16 @@ class OfflineProvider:
     """Mock bez sieci — pozwala uruchomić i przetestować cały przepływ deterministycznie."""
 
     def __init__(self, inactive_nips: set[str] | None = None, bad_accounts: set[str] | None = None):
+        """EN: Sets up the offline mock with the given inactive tax ids and bad accounts.
+        PL: Konfiguruje atrape offline zadanymi nieaktywnymi NIP-ami i zlymi kontami.
+        """
         self.inactive = {_digits(n) for n in (inactive_nips or {DEMO_INACTIVE_NIP})}
         self.bad_accounts = set(bad_accounts or ())
 
     def verify(self, nip: str, account: str | None = None) -> VatStatus:
+        """EN: Checks a tax id and bank account in the registry.
+        PL: Sprawdza NIP i numer konta w rejestrze.
+        """
         d = _digits(nip)
         active = d not in self.inactive
         acc_ok = None if account is None else (_digits(account) not in {_digits(a) for a in self.bad_accounts})
@@ -60,6 +63,9 @@ class MFWhitelistProvider:
     BASE = "https://wl-api.mf.gov.pl/api/search/nip/"
 
     def verify(self, nip: str, account: str | None = None) -> VatStatus:
+        """EN: Checks a tax id and bank account in the registry.
+        PL: Sprawdza NIP i numer konta w rejestrze.
+        """
         d = _digits(nip)
         url = f"{self.BASE}{d}?date={date.today().isoformat()}"
         try:

@@ -1,12 +1,7 @@
-"""Ekstrakcja: obraz faktury (PNG) → struktura Invoice.
-
-Dwa backendy o wspólnym interfejsie (Extractor):
-- AnthropicVisionExtractor — produkcja: Claude (vision) czyta obraz i zwraca JSON. Wymaga klucza.
-- ReplayExtractor        — demo bez klucza: czyta wcześniej wyekstrahowane JSON-y z dysku.
-
-Ekstrakcja NIE poprawia faktury (nie liczy od nowa, nie zmienia stawek) — przepisuje to, co
-widać. Wykrywanie błędów to zadanie walidacji (validate.py) — dzięki temu mierzymy osobno
-wierność odczytu (accuracy) i skuteczność kontroli.
+"""EN: Extraction from an invoice image into an Invoice object; two interchangeable
+backends - a vision model in production and a replay backend for offline demos.
+PL: Ekstrakcja z obrazu faktury do obiektu Invoice; dwa wymienne backendy -
+model wizyjny w produkcji i odtwarzanie dla dema bez sieci.
 """
 from __future__ import annotations
 
@@ -58,7 +53,9 @@ class Extractor(Protocol):
 
 
 def _strip_json(text: str) -> str:
-    """Wyłuskuje surowy JSON z odpowiedzi modelu (usuwa ewentualne ```json ... ```)."""
+    """EN: Extracts raw JSON from a model reply.
+    PL: Wyluskuje surowy JSON z odpowiedzi modelu.
+    """
     text = text.strip()
     fence = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
     if fence:
@@ -68,6 +65,9 @@ def _strip_json(text: str) -> str:
 
 
 def _encode(path: Path) -> tuple[str, str]:
+    """EN: Encodes an image for the model request.
+    PL: Koduje obraz na potrzeby zapytania do modelu.
+    """
     media = _MEDIA.get(path.suffix.lower(), "image/png")
     return media, base64.standard_b64encode(path.read_bytes()).decode("ascii")
 
@@ -79,18 +79,27 @@ class AnthropicVisionExtractor:
     """
 
     def __init__(self, client=None, model: str = MODEL, max_tokens: int = 2000):
+        """EN: Stores the model client and request settings.
+        PL: Zapamietuje klienta modelu i ustawienia zapytania.
+        """
         self.model = model
         self.max_tokens = max_tokens
         self._client = client
 
     @property
     def client(self):
+        """EN: Returns the model client, creating it on first use.
+        PL: Zwraca klienta modelu, tworzac go przy pierwszym uzyciu.
+        """
         if self._client is None:
             import anthropic  # import leniwy — moduł działa bez SDK/klucza (ReplayExtractor)
             self._client = anthropic.Anthropic()
         return self._client
 
     def extract(self, image_path: str | Path) -> Invoice:
+        """EN: Returns the Invoice read from an image.
+        PL: Zwraca fakture odczytana z obrazu.
+        """
         path = Path(image_path)
         media, data = _encode(path)
         msg = self.client.messages.create(
@@ -112,12 +121,21 @@ class ReplayExtractor:
     """Demo bez klucza: zwraca wcześniej zapisaną ekstrakcję (samples/vision/<stem>.json)."""
 
     def __init__(self, directory: str | Path):
+        """EN: Points the replay backend at a directory of saved samples.
+        PL: Wskazuje backendowi odtwarzania katalog z zapisanymi probkami.
+        """
         self.dir = Path(directory)
 
     def has(self, image_path: str | Path) -> bool:
+        """EN: Tells whether a replay sample exists for an image.
+        PL: Mowi, czy istnieje zapisana probka dla obrazu.
+        """
         return (self.dir / (Path(image_path).stem + ".json")).exists()
 
     def extract(self, image_path: str | Path) -> Invoice:
+        """EN: Returns the Invoice read from an image.
+        PL: Zwraca fakture odczytana z obrazu.
+        """
         p = self.dir / (Path(image_path).stem + ".json")
         return Invoice.model_validate_json(p.read_text(encoding="utf-8"))
 
@@ -143,19 +161,29 @@ class FieldDiff:
 
     @property
     def accuracy(self) -> float:
+        """EN: Per-field accuracy over the processed set.
+        PL: Dokladnosc per pole na przetworzonym zbiorze.
+        """
         return self.matched / self.total if self.total else 1.0
 
 
 def _eq_num(a: float, b: float, tol: float) -> bool:
+    """EN: Compares two numbers within a tolerance.
+    PL: Porownuje dwie liczby z tolerancja.
+    """
     return abs(float(a) - float(b)) <= tol
 
 
 def field_diff(pred: Invoice, truth: Invoice, money_tol: float = 0.01) -> FieldDiff:
-    """Porównuje pola faktury odczytanej (pred) z prawdą (truth). Pole 'category' pomijamy
-    (uzupełnia je agent, nie ma go na fakturze)."""
+    """EN: Compares extracted fields with the ground truth.
+    PL: Porownuje wyciagniete pola z danymi wzorcowymi.
+    """
     d = FieldDiff()
 
     def check(name: str, a, b, num: bool = False, tol: float = 0.0) -> None:
+        """EN: Compares one field and records the result.
+        PL: Porownuje jedno pole i zapisuje wynik.
+        """
         d.total += 1
         ok = _eq_num(a, b, tol) if num else (str(a).strip() == str(b).strip())
         if ok:

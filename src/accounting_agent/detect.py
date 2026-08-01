@@ -1,7 +1,7 @@
-"""Wykrywanie duplikatów i wartości odstających w paczce faktur.
-
-Duplikaty — ten sam numer faktury pojawia się więcej niż raz (klasyczny problem w obiegu).
-Outliery — nienaturalnie wysokie kwoty brutto względem reszty (metoda IQR, odporna na skos).
+"""EN: Detection of duplicates, outliers and number-format mismatches across a
+batch of invoices.
+PL: Wykrywanie duplikatow, kwot odstajacych i obcych formatow numeru w paczce
+faktur.
 """
 from __future__ import annotations
 
@@ -11,19 +11,24 @@ from .schema import Invoice
 
 
 def find_duplicates(invoices: list[Invoice]) -> set[int]:
-    """Indeksy faktur, których numer występuje w paczce więcej niż raz."""
+    """EN: Indices of invoices whose number appears more than once.
+    PL: Indeksy faktur, ktorych numer wystepuje wiecej niz raz.
+    """
     counts = Counter(inv.invoice_number for inv in invoices)
     return {i for i, inv in enumerate(invoices) if counts[inv.invoice_number] > 1}
 
 
 def find_outliers(invoices: list[Invoice], k: float = 1.5) -> set[int]:
-    """Indeksy faktur z kwotą brutto odstającą (górny wąs IQR: > Q3 + k·IQR)."""
+    """EN: Indices of invoices with an outlying gross amount (IQR rule).
+    PL: Indeksy faktur z odstajaca kwota brutto (regula IQR).
+    """
     if len(invoices) < 4:
         return set()
     vals = sorted(inv.total_gross for inv in invoices)
     n = len(vals)
 
     def q(p: float) -> float:
+        """EN: Quantile helper. / PL: Pomocnik do kwantyli."""
         pos = p * (n - 1)
         lo = int(pos)
         frac = pos - lo
@@ -35,16 +40,17 @@ def find_outliers(invoices: list[Invoice], k: float = 1.5) -> set[int]:
 
 
 def _num_pattern(s: str) -> str:
-    """Szkielet formatu numeru: cyfry→9, litery→A, separatory bez zmian. 'FV/2026/06/0001' → 'AA/9999/99/9999'."""
+    """EN: Turns an invoice number into a format skeleton.
+    PL: Zamienia numer faktury na szkielet formatu.
+    """
     return "".join("9" if c.isdigit() else "A" if c.isalpha() else c for c in s)
 
 
 def find_format_mismatches(invoices: list[Invoice]) -> set[int]:
-    """Indeksy faktur o formacie numeru odbiegającym od dominującego — przy TYM SAMYM
-    kontrahencie (NIP), który ma też fakturę w formacie standardowym.
-
-    Sygnał: ten sam kontrahent, inny szablon/system numeracji → możliwe podszycie się
-    lub zmiana systemu → żółte światło, kontrola ręczna.
+    """EN: Indices of invoices whose number format differs from the
+    dominant one for the same vendor.
+    PL: Indeksy faktur o formacie numeru odbiegajacym od dominujacego
+    u tego samego kontrahenta.
     """
     if len(invoices) < 3:
         return set()
@@ -61,7 +67,9 @@ def find_format_mismatches(invoices: list[Invoice]) -> set[int]:
 
 
 def flags_for(invoices: list[Invoice]) -> list[list[str]]:
-    """Dla każdej faktury lista tagów anomalii (duplikat / kwota odstająca / inny format)."""
+    """EN: Anomaly tags per invoice.
+    PL: Tagi anomalii dla kazdej faktury.
+    """
     dups = find_duplicates(invoices)
     outs = find_outliers(invoices)
     fmts = find_format_mismatches(invoices)
